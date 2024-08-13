@@ -11,6 +11,7 @@ enum EnMsgType {
     CREATE_GROUP = 7, // 创建群组
     ADD_GROUP = 8, // 加入群组
     GROUP_CHAT = 9, // 群聊天
+    LOGOUT_MSG = 10, // 退出登陆
 };
 
 #endif

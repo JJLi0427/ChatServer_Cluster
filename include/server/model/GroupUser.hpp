@@ -8,6 +8,9 @@ public:
     void setRole(int role) {
         this->role = role;
     }
+    std::string getRole() {
+        return role;
+    }
 private:
     std::string role;
 };

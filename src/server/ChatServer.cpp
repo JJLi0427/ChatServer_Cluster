@@ -41,7 +41,6 @@ void ChatServer::onMessage(const muduo::net::TcpConnectionPtr& conn, muduo::net:
     muduo::string msg(buf->retrieveAllAsString());
     // 数据的反序列化
     json js = json::parse(msg);
-
     // 通过js["msgid"]获取业务处理器
     auto msgHandler = ChatService::instance()->getMsgHandler(js["msgid"].get<int>());
     // 回调消息绑定好的事件处理器来执行相应的业务处理

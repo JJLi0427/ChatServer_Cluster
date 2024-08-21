@@ -89,12 +89,9 @@ int main(int argc, char **argv) {
     // main线程用于接收用户输入，负责发送数据
     for (;;) {
         // 显示首页面菜单 登录、注册、退出
-        std::cout << "========================" << std::endl;
-        std::cout << "1. login" << std::endl;
-        std::cout << "2. register" << std::endl;
-        std::cout << "3. quit" << std::endl;
-        std::cout << "========================" << std::endl;
-        std::cout << "choice:";
+        std::cout << "========================" << std::endl 
+                << "1. login" << std::endl << "2. register" << std::endl << "3. quit" << std::endl
+                << "========================" << std::endl << "choice:";
         int choice = 0;
         std::cin >> choice;
         std::cin.get(); // 读掉缓冲区残留的回车
@@ -114,7 +111,7 @@ int main(int argc, char **argv) {
             js["id"] = id;
             js["password"] = pwd;
             std::string request = js.dump();
-
+            
             g_isLoginSuccess = false;
 
             int len = send(clientfd, request.c_str(), strlen(request.c_str()) + 1, 0);
@@ -168,18 +165,17 @@ int main(int argc, char **argv) {
 
 // 处理注册的响应逻辑
 void doRegResponse(json &responsejs) {
-    if (0 != responsejs["errno"].get<int>()) { // 注册失败
+    if (0 != responsejs["error"].get<int>()) { // 注册失败
         std::cerr << "name is already exist, register error!" << std::endl;
     }
     else { // 注册成功
-        std::cout << "name register success, userid is " << responsejs["id"]
-                << ", do not forget it!" << std::endl;
+        std::cout << "name register success, userid is " << responsejs["id"] << ", do not forget it!" << std::endl;
     }
 }
 
 // 处理登录的响应逻辑
 void doLoginResponse(json &responsejs) {
-    if (0 != responsejs["errno"].get<int>()) { // 登录失败
+    if (0 != responsejs["error"].get<int>()) { // 登录失败
         std::cerr << responsejs["errmsg"] << std::endl;
         g_isLoginSuccess = false;
     }
@@ -266,7 +262,6 @@ void readTaskHandler(int clientfd) {
             close(clientfd);
             exit(-1);
         }
-
         // 接收ChatServer转发的数据，反序列化生成json数据对象
         json js = json::parse(buffer);
         int msgtype = js["msgid"].get<int>();

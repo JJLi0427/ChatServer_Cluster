@@ -85,7 +85,7 @@ void ChatService::login(const muduo::net::TcpConnectionPtr& conn, json& js, mudu
                     js["state"] = user.getState();
                     vec2.push_back(js.dump());
                 }
-                response["friend"] = vec2;
+                response["friends"] = vec2;
             }
             conn->send(response.dump());
         }

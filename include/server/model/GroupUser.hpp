@@ -5,7 +5,7 @@
 
 class GroupUser : public User {
 public:
-    void setRole(int role) {
+    void setRole(std::string role) {
         this->role = role;
     }
     std::string getRole() {

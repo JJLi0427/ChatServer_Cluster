@@ -212,11 +212,11 @@ void doLoginResponse(json &responsejs) {
                 group.setId(grpjs["id"].get<int>());
                 group.setName(grpjs["groupname"]);
                 group.setDesc(grpjs["groupdesc"]);
-
                 std::vector<std::string> vec2 = grpjs["users"];
                 for (std::string &userstr : vec2)
                 {
                     GroupUser user;
+                    std::cout << userstr << std::endl;
                     json js = json::parse(userstr);
                     user.setId(js["id"].get<int>());
                     user.setName(js["name"]);
@@ -243,7 +243,7 @@ void doLoginResponse(json &responsejs) {
                             << " said: " << js["msg"].get<std::string>() << std::endl;
                 }
                 else {
-                    std::cout << "群消息[" << js["groupid"] << "]:" << js["time"].get<std::string>() << " [" << js["id"] << "]" << js["name"].get<std::string>()
+                    std::cout << "group_id[" << js["groupid"] << "]:" << js["time"].get<std::string>() << " [" << js["id"] << "]" << js["name"].get<std::string>()
                             << " said: " << js["msg"].get<std::string>() << std::endl;
                 }
             }
@@ -307,7 +307,9 @@ void showCurrentUserData() {
     std::cout << "----------------------group list----------------------" << std::endl;
     if (!g_currentUserGroupList.empty()) {
         for (Group &group : g_currentUserGroupList) {
-            std::cout << group.getId() << " " << group.getName() << " " << group.getDesc() << std::endl;
+            std::cout << "group_id:" <<  group.getId() << " " 
+                    <<"name:" <<  group.getName() << " " 
+                    <<"desc:" <<  group.getDesc() << std::endl;
             for (GroupUser &user : group.getUser()) {
                 std::cout << user.getId() << " " 
                         << user.getName() << " " 

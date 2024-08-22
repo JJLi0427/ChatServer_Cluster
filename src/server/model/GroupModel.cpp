@@ -20,7 +20,7 @@ bool GroupModel::createGroup(Group &group) {
 
 void GroupModel::addGroup(int userid, int groupid, std::string role) {
     char sql[1024] = {0};
-    sprintf(sql, "insert into GroupUser values(%d, %d, '%s')", userid, groupid, role.c_str());
+    sprintf(sql, "insert into GroupUser values(%d, %d, '%s')", groupid, userid, role.c_str());
     MySQL mysql;
     if (mysql.connect()) {
         mysql.update(sql);
@@ -53,7 +53,7 @@ std::vector<Group> GroupModel::queryGroups(int userid) {
     // 查询群组的用户信息
     for (Group &group : vec) {
         sprintf(
-            sql, "select a.id, a.name, a.state from User a inner join GroupUser b on a.id = b.userid where b.groupid = %d", 
+            sql, "select a.id, a.name, a.state, b.grouprole from User a inner join GroupUser b on a.id = b.userid where b.groupid = %d", 
             group.getId()
         );
         MYSQL_RES* res = mysql.query(sql);
@@ -64,6 +64,7 @@ std::vector<Group> GroupModel::queryGroups(int userid) {
                 user.setId(atoi(row[0]));
                 user.setName(row[1]);
                 user.setState(row[2]);
+                user.setRole(row[3]);
                 group.getUser().push_back(user);
             }
             mysql_free_result(res);

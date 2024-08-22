@@ -87,6 +87,29 @@ void ChatService::login(const muduo::net::TcpConnectionPtr& conn, json& js, mudu
                 }
                 response["friends"] = vec2;
             }
+            // 查询用户的群组信息
+            std::vector<Group> groupVec = _groupmodel.queryGroups(id);
+            if (groupVec.size() > 0) {
+                std::vector<std::string> vec3;
+                for (Group &group : groupVec) {
+                    json js;
+                    js["id"] = group.getId();
+                    js["groupname"] = group.getName();
+                    js["groupdesc"] = group.getDesc();
+                    std::vector<std::string> vec4;
+                    for (GroupUser &groupUser : group.getUser()) {
+                        json js;
+                        js["id"] = groupUser.getId();
+                        js["name"] = groupUser.getName();
+                        js["state"] = groupUser.getState();
+                        js["role"] = groupUser.getRole();
+                        vec4.push_back(js.dump());
+                    }
+                    js["users"] = vec4;
+                    vec3.push_back(js.dump());
+                }
+                response["groups"] = vec3;
+            }
             conn->send(response.dump());
         }
     }

@@ -36,6 +36,14 @@ ChatService::ChatService() {
         &ChatService::addGroup, this, 
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
     );
+    msgHandlerMap_[GROUP_CHAT] = std::bind(
+        &ChatService::groupChat, this, 
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    );
+    msgHandlerMap_[LOGOUT_MSG] = std::bind(
+        &ChatService::loginout, this, 
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    );
 }
 
 // 登陆业务处理
@@ -218,6 +226,23 @@ void ChatService::groupChat(const muduo::net::TcpConnectionPtr& conn, json& js, 
             }
         }
     }
+}
+
+// 用户注销
+void ChatService::loginout(const muduo::net::TcpConnectionPtr& conn, json& js, muduo::Timestamp time) {
+    int id = js["id"];
+    {
+        std::lock_guard<std::mutex> lock(_connMutex);
+        auto it = _userConnMap.find(id);
+        if (it != _userConnMap.end()) {
+            _userConnMap.erase(it);
+        }
+    }
+    // 更新用户的状态信息
+    User user;
+    user.setId(id);
+    user.setState("offline");
+    _usermodel.updateState(user);
 }
 
 // 获取消息对应的处理器

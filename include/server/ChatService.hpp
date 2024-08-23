@@ -41,6 +41,8 @@ public:
     void addGroup(const muduo::net::TcpConnectionPtr& conn, json& js, muduo::Timestamp time);
     // 群组聊天
     void groupChat(const muduo::net::TcpConnectionPtr& conn, json& js, muduo::Timestamp time);
+    // 用户注销
+    void loginout(const muduo::net::TcpConnectionPtr& conn, json& js, muduo::Timestamp time);
     // 处理客户端异常退出
     void clientCloseException(const muduo::net::TcpConnectionPtr& conn);
     // 服务器异常退出

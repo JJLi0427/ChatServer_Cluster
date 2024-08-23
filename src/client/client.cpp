@@ -272,7 +272,7 @@ void readTaskHandler(int clientfd) {
         }
 
         if (GROUP_CHAT == msgtype) {
-            std::cout << "群消息[" << js["groupid"] << "]:" 
+            std::cout << "group_id[" << js["groupid"] << "]:" 
                     << js["time"].get<std::string>() << " [" << js["id"] << "]" 
                     << js["name"].get<std::string>() << " said: " << js["msg"].get<std::string>() << std::endl;
             continue;

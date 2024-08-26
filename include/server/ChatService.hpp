@@ -10,6 +10,7 @@ using json = nlohmann::json;
 #include "FriendModel.hpp"
 #include "GroupModel.hpp"
 #include "OfflineMsgModel.hpp"
+#include "redis.hpp"
 
 #include <unordered_map>
 #include <functional>
@@ -49,6 +50,8 @@ public:
     void serverCloseException();
     // 获取消息处理器
     MsgHandler getMsgHandler(int msgid);
+    // 从redis消息队列中获取订阅的消息
+    void redisMessageHandler(int userid, std::string msg);
 private:
     ChatService();
     // 存储消息id和其对应的业务处理方法
@@ -61,6 +64,8 @@ private:
     FriendModel _friendmodel;
     GroupModel _groupmodel;
     OfflineMsgModel _offlinemsgmodel;
+    // redis操作对象
+    Redis _redis;
 };
 
 #endif

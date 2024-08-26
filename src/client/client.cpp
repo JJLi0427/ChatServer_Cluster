@@ -49,7 +49,7 @@ void showCurrentUserData();
 // 聊天客户端程序实现，main线程用作发送线程，子线程用作接收线程
 int main(int argc, char **argv) {
     if (argc < 3) {
-        std::cerr << "command invalid! example: ./ChatClient 127.0.0.1 6000" << std::endl;
+        std::cerr << "command invalid! example: ./ChatClient 127.0.0.1 6666" << std::endl;
         exit(-1);
     }
 

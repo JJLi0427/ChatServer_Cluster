@@ -12,38 +12,18 @@ ChatService* ChatService::instance() {
 // 构造函数
 ChatService::ChatService() {
     // 绑定业务处理器
-    msgHandlerMap_[LOGIN_MSG] = std::bind(
-        &ChatService::login, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[REG_MSG] = std::bind(
-        &ChatService::reg, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[ONE_CHAT] = std::bind(
-        &ChatService::oneChat, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[ADD_FRIEND] = std::bind(
-        &ChatService::addFriend, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[CREATE_GROUP] = std::bind(
-        &ChatService::createGroup, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[ADD_GROUP] = std::bind(
-        &ChatService::addGroup, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[GROUP_CHAT] = std::bind(
-        &ChatService::groupChat, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
-    msgHandlerMap_[LOGOUT_MSG] = std::bind(
-        &ChatService::loginout, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    );
+    msgHandlerMap_[LOGIN_MSG] = std::bind(&ChatService::login, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[REG_MSG] = std::bind(&ChatService::reg, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[ONE_CHAT] = std::bind(&ChatService::oneChat, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[ADD_FRIEND] = std::bind(&ChatService::addFriend, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[CREATE_GROUP] = std::bind(&ChatService::createGroup, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[ADD_GROUP] = std::bind(&ChatService::addGroup, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[GROUP_CHAT] = std::bind(&ChatService::groupChat, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    msgHandlerMap_[LOGOUT_MSG] = std::bind(&ChatService::loginout, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+
+    if (_redis.connect()) {
+        _redis.init_notify_handler(std::bind(&ChatService::redisMessageHandler, this, std::placeholders::_1, std::placeholders::_2));
+    }
 }
 
 // 登陆业务处理
@@ -68,6 +48,10 @@ void ChatService::login(const muduo::net::TcpConnectionPtr& conn, json& js, mudu
                 std::lock_guard<std::mutex> lock(_connMutex);
                 _userConnMap.insert({id, conn});
             }
+
+            // 向redis订阅channel
+            _redis.subscribe(id);
+
             // 更新用户状态信息
             user.setState("online");
             _usermodel.updateState(user);
@@ -169,17 +153,13 @@ void ChatService::oneChat(const muduo::net::TcpConnectionPtr& conn, json& js, mu
     }
     // 查询toid是否在线
     User user = _usermodel.query(toid);
-    if (user.getId() != -1) {
-        // 用户不在线, 存储离线消息
-        _offlinemsgmodel.insert(toid, js.dump());
+    if (user.getState() == "online") {
+        _redis.publish(toid, js.dump());
+        return;
     }
     else {
         // 用户不存在
-        json response;
-        response["msgid"] = ONE_CHAT;
-        response["error"] = 1;
-        response["errmsg"] = "no user";
-        conn->send(response.dump());
+        _offlinemsgmodel.insert(toid, js.dump());
     }
 }
 
@@ -213,17 +193,21 @@ void ChatService::groupChat(const muduo::net::TcpConnectionPtr& conn, json& js, 
     int id = js["id"];
     int groupid = js["groupid"];
     std::vector<int> vec = _groupmodel.queryGroupUsers(id, groupid);
+    std::lock_guard<std::mutex> lock(_connMutex);
     for (int userid : vec) {
-        {
-            std::lock_guard<std::mutex> lock(_connMutex);
-            auto it = _userConnMap.find(userid);
-            if (it != _userConnMap.end()) {
-                it->second->send(js.dump());
+        auto it = _userConnMap.find(userid);
+        if (it != _userConnMap.end()) {
+            it->second->send(js.dump());
+        }
+        else {
+            User user = _usermodel.query(userid);
+            if (user.getState() == "online") {
+                _redis.publish(userid, js.dump());
             }
             else {
-                // 存储离线消息
-                _offlinemsgmodel.insert(userid, js.dump());
-            }
+            // 存储离线消息
+            _offlinemsgmodel.insert(userid, js.dump());
+        }
         }
     }
 }
@@ -238,6 +222,10 @@ void ChatService::loginout(const muduo::net::TcpConnectionPtr& conn, json& js, m
             _userConnMap.erase(it);
         }
     }
+
+    // 向redis取消订阅channel
+    _redis.unsubscribe(id);
+
     // 更新用户的状态信息
     User user;
     user.setId(id);
@@ -270,6 +258,10 @@ void ChatService::clientCloseException(const muduo::net::TcpConnectionPtr& conn)
             }
         }
     }
+
+    // 向redis取消订阅channel
+    _redis.unsubscribe(user.getId());
+
     // 更新用户的状态信息
     if (user.getId() != -1) {
         user.setState("offline");
@@ -280,4 +272,15 @@ void ChatService::clientCloseException(const muduo::net::TcpConnectionPtr& conn)
 // 服务器异常退出
 void ChatService::serverCloseException() {
     _usermodel.resetState();
+}
+
+// 从redis消息队列中获取订阅的消息
+void ChatService::redisMessageHandler(int userid, std::string msg) {
+    std::lock_guard<std::mutex> lock(_connMutex);
+    auto it = _userConnMap.find(userid);
+    if (it != _userConnMap.end()) {
+        it->second->send(msg);
+        return;
+    }
+    _offlinemsgmodel.insert(userid, msg);
 }

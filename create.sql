@@ -1,3 +1,9 @@
+// 创建数据库
+CREATE DATABASE IF NOT EXISTS ChatServer DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+
+// 使用 ChatServer 数据库
+USE ChatServer;
+
 -- 创建 User 表
 CREATE TABLE User (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -25,15 +31,16 @@ CREATE TABLE AllGroup (
 
 -- 创建 GroupUser 表
 CREATE TABLE GroupUser (
-    groupid INT PRIMARY KEY,
+    groupid INT NOT NULL,
     userid INT NOT NULL,
     grouprole ENUM('creator', 'normal') DEFAULT 'normal',
-    FOREIGN KEY (userid) REFERENCES User(id)  -- 假设 User 表已存在
+    PRIMARY KEY (groupid, userid),
+    FOREIGN KEY (userid) REFERENCES User(id)
 );
 
 -- 创建 OfflineMessage 表
 CREATE TABLE OfflineMessage (
-    userid INT PRIMARY KEY,
+    userid INT NOT NULL,
     message VARCHAR(500) NOT NULL,
-    FOREIGN KEY (userid) REFERENCES User(id)  -- 假设 User 表已存在
+    FOREIGN KEY (userid) REFERENCES User(id)
 );

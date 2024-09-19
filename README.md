@@ -25,5 +25,6 @@ stream {
 ``` shell
 git clone
 cd ChatServer_Learn
+chmod a+x ./install.sh
 ./install.sh
 ```

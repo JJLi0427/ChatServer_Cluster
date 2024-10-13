@@ -4,7 +4,7 @@
 
 Install `muduo` `MySQL` `Nginx` `Redis`  
 
-### How to use it:
+### How to install and config:
 
 **nginx.conf**:
 ```
@@ -27,4 +27,15 @@ git clone
 cd ChatServer_Learn
 chmod a+x ./install.sh
 ./install.sh
+```
+
+### How to use:
+**Init ChatServer**
+```
+cd ./bin
+# eg.start 2 server
+./ChatServer 127.0.0.1 6000
+./ChatServer 127.0.0.1 6002
+# start a client
+./ChatClient 127.0.0.1 6666
 ```
